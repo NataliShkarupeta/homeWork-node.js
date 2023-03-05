@@ -1,5 +1,5 @@
-let path = require("path");
-let fs = require("fs").promises;
+let path = require("node:path");
+let fs = require("node:fs/promises");
 const shortid = require("shortid");
 
 const contactsPath = path.resolve("./db/contacts.json");
@@ -7,30 +7,48 @@ const contactsPath = path.resolve("./db/contacts.json");
 async function listContacts() {
   try {
     const data = await fs.readFile(contactsPath, "utf8");
-    const result = JSON.parse(data.toString());
-    console.table(result);
+    const result = JSON.parse(data);
     return result;
   } catch (error) {
     console.log(error);
   }
 }
 
-console.log("after function=>", listContacts());
-
-function getContactById(contactId) {
-  // ...твій код
+async function getContactById(contactId) {
+  try {
+    const data = await listContacts();
+    const contId = data.find((el) => el.id === String(contactId));
+    return contId || null;
+  } catch (error) {
+    console.log(error);
+  }
+}
+async function addContact({ name, email, phone }) {
+  try {
+    const data = await listContacts();
+    const newCont = { name, email, phone, id: shortid.generate() };
+    data.push(newCont);
+    await fs.writeFile(contactsPath, JSON.stringify(data, null, "\t"));
+    return newCont;
+  } catch (error) {
+    console.log(error);
+  }
 }
 
-function removeContact(contactId) {
-  fs.unlink();
+async function removeContact(contactId) {
+  try {
+    const data = await listContacts();
+    const newContArray = data.filter((el) => el.id !== contactId);
+    await fs.writeFile(contactsPath, JSON.stringify(newContArray, null, "\t"));
+    return data;
+  } catch (error) {
+    console.log(error);
+  }
 }
 
-// async function addContact(name, email, phone) {
-//   const data = await fs.readFile(contactsPath, "utf8");
-//   const newContact = { id: shortid.generate(), name, email, phone };
-//   await fs.writeFile(contactsPath, newContact, "utf8");
-// }
-
-// console.log("after add=>", addContact());
-
-module.exports = { listContacts, getContactById, removeContact };
+module.exports = {
+  listContacts,
+  getContactById,
+  addContact,
+  removeContact,
+};
